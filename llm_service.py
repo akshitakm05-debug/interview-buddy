@@ -1,5 +1,5 @@
 """LLM helper for Interview Buddy (Gemini REST API). Falls back to Demo Mode if no key or on any error."""
-import os, json, re
+import os, json, re, time
 import requests
 
 API_KEY = os.getenv("GEMINI_API_KEY")
@@ -8,10 +8,15 @@ URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generate
 
 
 def _call(prompt):
-    body = {"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.3}}
-    r = requests.post(URL, headers={"x-goog-api-key": API_KEY}, json=body, timeout=30)
-    r.raise_for_status()
-    return r.json()["candidates"][0]["content"]["parts"][0]["text"]
+      def _call(prompt):
+       body = {"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.3}}
+       for attempt in range(3):
+           r = requests.post(URL, headers={"x-goog-api-key": API_KEY}, json=body, timeout=40)
+           if r.status_code in (429, 500, 503) and attempt < 2:
+               time.sleep(2)
+               continue
+           r.raise_for_status()
+           return r.json()["candidates"][0]["content"]["parts"][0]["text"]
 
 
 def _json(prompt):

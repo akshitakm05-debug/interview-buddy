@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card" id="qcard">
+  <div class="meta"><span>Question {{ question_number }} of {{ total_questions }}</span><span>{{ role }}</span></div>
+  <div class="bar"><i style="width:{{ progress_pct }}%"></i></div>
+  <p class="q">{{ question }}</p>
+  <label for="answer">Your answer</label>
+  <textarea id="answer" placeholder="Type or use voice. Add a definition, an example, and why it matters."></textarea>
+  <div class="row"><button id="submit">Submit answer</button><button id="voice" class="ghost">Voice input</button></div>
+</section>
+<section class="card hidden" id="fb">
+  <div class="score"><span id="s"></span>/10</div>
+  <p><b class="good">What worked:</b> <span id="g"></span></p>
+  <p><b>What was missing:</b> <span id="m"></span></p>
+  <p><b>A stronger answer:</b> <span id="b"></span></p>
+  <p><b>Tip:</b> <span id="t"></span></p>
+  <div class="row"><a class="btn" id="next" href="#">Next</a></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+const $ = id => document.getElementById(id);
+$("submit").onclick = async () => {
+  const a = $("answer").value.trim();
+  if (!a) { alert("Write or say an answer first."); return; }
+  $("submit").disabled = true; $("submit").textContent = "Evaluating...";
+  try {
+    const r = await fetch("/answer", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({answer:a})});
+    const d = await r.json();
+    if (!r.ok) { alert(d.message); if (d.redirect_url) location.href = d.redirect_url; $("submit").disabled = false; $("submit").textContent = "Submit answer"; return; }
+    const e = d.evaluation;
+    $("s").textContent = e.score; $("g").textContent = e.good; $("m").textContent = e.missing;
+    $("b").textContent = e.better_answer; $("t").textContent = e.tip;
+    $("next").href = d.next_url; $("next").textContent = d.is_last_question ? "See my report" : "Next question";
+    $("qcard").classList.add("hidden"); $("fb").classList.remove("hidden");
+  } catch (err) { alert("Could not get feedback: " + err.message); $("submit").disabled = false; $("submit").textContent = "Submit answer"; }
+};
+
+// Voice input (use Chrome; works on localhost or https only)
+let rec = null, on = false;
+$("voice").onclick = () => {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert("Voice input needs Google Chrome."); return; }
+  if (on) { rec.stop(); return; }
+  rec = new SR();
+  rec.lang = {English:"en-IN", Tamil:"ta-IN", Hindi:"hi-IN"}["{{ language }}"] || "en-IN";
+  rec.continuous = true; rec.interimResults = true;
+  const base = $("answer").value ? $("answer").value.trim() + " " : "";
+  rec.onstart = () => { on = true; $("voice").textContent = "Stop listening"; };
+  rec.onresult = e => { $("answer").value = base + Array.from(e.results).map(r => r[0].transcript).join(" "); };
+  rec.onerror = e => alert("Voice error: " + e.error + (e.error === "not-allowed" ? ". Allow the microphone for this site." : ""));
+  rec.onend = () => { on = false; $("voice").textContent = "Voice input"; };
+  rec.start();
+};
+</script>
+{% endblock %}

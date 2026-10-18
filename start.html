@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<p class="sub">Practice interviews, get honest feedback, and walk in confident.</p>
+<section class="card">
+  {% if has_active_session %}<p>You have an interview in progress. <a href="{{ url_for('interview') }}">Continue it</a> or start a new one below.</p>{% endif %}
+  <label for="role">Role you are applying for</label>
+  <select id="role"><option>Software Engineer</option><option>Data Analyst</option><option>HR Executive</option><option>Customer Support</option></select>
+  <label for="custom_role">Or type your own role (optional)</label>
+  <input id="custom_role" placeholder="e.g. Cyber Security Analyst">
+  <label for="count">Number of questions</label>
+  <select id="count"><option>3</option><option>5</option><option>8</option></select>
+  <label for="language">Feedback language</label>
+  <select id="language"><option>English</option><option>Tamil</option><option>Hindi</option></select>
+  <div class="row"><button id="go">Start interview</button></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById("go").onclick = async (e) => {
+  e.target.disabled = true; e.target.textContent = "Preparing your questions...";
+  const v = id => document.getElementById(id).value;
+  try {
+    const r = await fetch("/start", {method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({role:v("role"), custom_role:v("custom_role"), count:v("count"), language:v("language")})});
+    location.href = (await r.json()).redirect_url;
+  } catch (err) { alert("Could not start: " + err.message); e.target.disabled = false; e.target.textContent = "Start interview"; }
+};
+</script>
+{% endblock %}

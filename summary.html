@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="meta"><span>{{ role }}</span><span>{{ evaluations|length }} questions</span></div>
+  <div class="score">{{ avg_score }}/10 <small style="font-size:1rem;color:var(--muted)">({{ percentage }}%)</small></div>
+  <p><b class="{{ tier_class }}">{{ tier }}</b></p>
+  <p>{{ verdict }}</p>
+  <div class="row"><a class="btn" href="{{ url_for('reset') }}">Practice again</a></div>
+</section>
+{% for e in evaluations %}
+<section class="card">
+  <div class="meta"><span>Question {{ e.index }}</span><span>{{ e.score }}/10</span></div>
+  <p class="q">{{ e.question }}</p>
+  <p><b>Your answer:</b> {{ e.answer }}</p>
+  <p><b class="good">What worked:</b> {{ e.good }}</p>
+  <p><b>What was missing:</b> {{ e.missing }}</p>
+  <p><b>A stronger answer:</b> {{ e.better_answer }}</p>
+  <p><b>Tip:</b> {{ e.tip }}</p>
+</section>
+{% endfor %}
+{% endblock %}
